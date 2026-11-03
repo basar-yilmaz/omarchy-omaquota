@@ -118,5 +118,12 @@
   "status.activeTip": "New sessions use %1",
   "status.makeActiveTip": "New sessions use another account. Click to use %1 instead.",
   "account.view": "Show the limits of %1",
-  "viewing.note": "Showing %1's limits · new sessions use %2"
+  "viewing.note": "Showing %1's limits · new sessions use %2",
+  "keys.agent": "agent",
+  "keys.account": "account",
+  "keys.activate": "make active",
+  "keys.settings": "settings",
+  "keys.refresh": "refresh",
+  "keys.style": "style",
+  "keys.close": "close"
 }

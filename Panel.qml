@@ -675,6 +675,7 @@ Panel {
       anchors.fill: parent
       implicitHeight: panelHeader.implicitHeight + root.sp(18)
         + Math.max(railCol.implicitHeight, detailCol.implicitHeight, emptyText.visible ? emptyText.implicitHeight : 0)
+        + root.sp(12) + keysFooter.implicitHeight
       onMoveRequested: function(dx, dy) {
         if (dy !== 0) { root.stepProvider(dy); return }
         if (root.targets.length === 0) return
@@ -741,6 +742,32 @@ Panel {
         }
       }
 
+      // ---------- Footer: keyboard shortcuts, small and quiet ----------
+      Flow {
+        id: keysFooter
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        spacing: root.sp(14)
+        Repeater {
+          model: [
+            { keys: "↑ ↓", label: strings.t("keys.agent") },
+            { keys: "← →", label: strings.t("keys.account") },
+            { keys: "↵", label: strings.t("keys.activate") },
+            { keys: "g", label: strings.t("keys.settings") },
+            { keys: "r", label: strings.t("keys.refresh") },
+            { keys: "s", label: strings.t("keys.style") },
+            { keys: "esc", label: strings.t("keys.close") }
+          ]
+          delegate: Row {
+            required property var modelData
+            spacing: root.sp(5)
+            Label { text: modelData.keys; font.pixelSize: root.fs(Style.font.caption); font.bold: true; elide: Text.ElideNone }
+            Label { text: modelData.label; color: root.dim; font.pixelSize: root.fs(Style.font.caption); elide: Text.ElideNone }
+          }
+        }
+      }
+
       Label {
         id: emptyText
         visible: root.providers.length === 0
@@ -760,7 +787,8 @@ Panel {
         visible: root.providers.length > 0
         anchors.top: panelHeader.bottom
         anchors.topMargin: root.sp(18)
-        anchors.bottom: parent.bottom
+        anchors.bottom: keysFooter.top
+        anchors.bottomMargin: root.sp(12)
         anchors.left: parent.left
         width: root.railWidth
         contentWidth: width
@@ -790,7 +818,8 @@ Panel {
         visible: root.providers.length > 0
         x: root.railWidth + root.columnGap / 2
         anchors.top: rail.top
-        anchors.bottom: parent.bottom
+        anchors.bottom: keysFooter.top
+        anchors.bottomMargin: root.sp(12)
         width: 1
         color: Qt.rgba(root.fg.r, root.fg.g, root.fg.b, 0.12)
       }
@@ -801,7 +830,8 @@ Panel {
         visible: root.providers.length > 0
         anchors.top: panelHeader.bottom
         anchors.topMargin: root.sp(18)
-        anchors.bottom: parent.bottom
+        anchors.bottom: keysFooter.top
+        anchors.bottomMargin: root.sp(12)
         x: root.railWidth + root.columnGap
         width: Math.max(0, parent.width - x)
         contentWidth: width
