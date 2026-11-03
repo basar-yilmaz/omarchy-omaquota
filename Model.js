@@ -272,6 +272,18 @@ function pickWindow(wins, title) {
   return pick
 }
 
+// The account whose limits an agent shows: the one picked for viewing, else
+// the active one. Viewing never switches anything.
+function viewedAccount(p, accountId) {
+  if (!p || !p.switchable || !Array.isArray(p.accounts) || p.accounts.length === 0) return null
+  var active = null
+  for (var i = 0; i < p.accounts.length; i++) {
+    if (p.accounts[i].id === accountId) return p.accounts[i]
+    if (p.accounts[i].active) active = p.accounts[i]
+  }
+  return active || p.accounts[0]
+}
+
 // Shortest tags that tell accounts apart: Work, Main -> W, M; Work, Weekend
 // -> Wo, We. Capped at four letters.
 function accountTags(labels) {
@@ -443,7 +455,7 @@ if (typeof module !== "undefined") module.exports = {
   validId: validId, parseExtras: parseExtras, shortLabel: shortLabel, windows: windows,
   peak: peak, normalize: normalize, alerts: alerts, countdown: countdown, level: level,
   escapeMarkup: escapeMarkup, parseBarItems: parseBarItems, serializeBarItems: serializeBarItems,
-  barEntries: barEntries, pickWindow: pickWindow, accountTags: accountTags, parseIdSet: parseIdSet, serializeIdSet: serializeIdSet, visibleWindows: visibleWindows, details: details, banked: banked, resetRows: resetRows, shortCountdown: shortCountdown,
+  barEntries: barEntries, viewedAccount: viewedAccount, pickWindow: pickWindow, accountTags: accountTags, parseIdSet: parseIdSet, serializeIdSet: serializeIdSet, visibleWindows: visibleWindows, details: details, banked: banked, resetRows: resetRows, shortCountdown: shortCountdown,
   cleanAccountSettings: cleanAccountSettings, managedKeys: managedKeys, pendingOverlay: pendingOverlay,
   manageKey: manageKey, unmanageKey: unmanageKey, setAccountKey: setAccountKey, booleanKeys: booleanKeys,
   humanizeKey: humanizeKey, TIGHTEST: TIGHTEST

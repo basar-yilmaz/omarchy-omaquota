@@ -14,8 +14,10 @@ the Omarchy bar. Requires Omarchy 4.5 or newer.
 - **One panel for every agent.** Agents are listed on the left with their
   tightest limit; the selected one fills the right with its limits, accounts
   and settings, so the panel stays compact with many agents.
-- **Account switching** for Claude Code, Codex and Grok. Click an account to
-  make it the one new sessions use, or sign in another one from the panel.
+- **Account switching** for Claude Code, Codex and Grok. Click any account to
+  see its limits without switching; a green **Active** or red **Make active**
+  button shows whether new sessions use it, and switches with one click. Sign
+  in more accounts from the panel.
   Optional auto-switch moves new sessions to the account with the most room
   when one nears its limit.
 - **Every account in the bar** (optional). Show each account's remaining
@@ -67,9 +69,11 @@ omarchy agent account add codex Personal
 | Click | Open the panel |
 | Right-click | Switch between Cards and Compact |
 | Palette button | Display options |
-| An agent's **Settings** tab | Bar choice, usage details, files, per-account settings |
+| Click an account | Show its limits, without switching |
+| **Active** / **Make active** | Green when new sessions use the account on show; red to switch to it |
+| An agent's **Settings** button | Bar choice, usage details, files, per-account settings (click again to go back) |
 
-Keys in the panel: `↑` `↓` agent · `←` `→` account · `Enter` switch ·
+Keys in the panel: `↑` `↓` agent · `←` `→` view an account · `Enter` make it active ·
 `g` limits/settings · `r` refresh · `s` style · `Esc` close.
 
 Switching changes the account that **new** sessions use. Running sessions

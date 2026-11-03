@@ -141,3 +141,12 @@ assert.strictEqual(M.barEntries(ps, { claude: "Week" }, { claude: true })[0].acc
 assert.deepStrictEqual(M.parseIdSet("claude, codex,,../x"), { claude: true, codex: true })
 assert.strictEqual(M.serializeIdSet({ claude: true, codex: false }), "claude")
 console.log("multi-account bar tests passed")
+
+// Viewing another account's limits never changes which one is active.
+const claudeP = ps[0]
+assert.strictEqual(M.viewedAccount(claudeP, "").id, "work", "the active account by default")
+assert.strictEqual(M.viewedAccount(claudeP, "main").id, "main")
+assert.strictEqual(M.viewedAccount(claudeP, "gone").id, "work", "an unknown id falls back to the active one")
+assert.strictEqual(claudeP.accounts.find(a => a.active).id, "work")
+assert.strictEqual(M.viewedAccount(ps[2], "x"), null, "providers without accounts have nothing to view")
+console.log("viewing tests passed")

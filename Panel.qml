@@ -61,6 +61,17 @@ Panel {
   // Master-detail: providers down the left, the picked one on the right, so
   // the panel is as tall as the longer column, not every provider stacked.
   property string selectedId: ""
+  // Which account's limits each agent shows: the active one until another is
+  // clicked. Looking never switches; the header's Make active button does.
+  property var viewing: ({})
+  function viewedAccount(p) { return Model.viewedAccount(p, p ? viewing[p.id] : "") }
+  readonly property var viewedOfSelected: viewedAccount(selected)
+  function viewAccount(providerId, accountId) {
+    var next = Object.assign({}, viewing)
+    next[providerId] = accountId
+    viewing = next
+    detailView = "limits"
+  }
   // Codex's banked resets, listed on demand: asking starts a Codex app-server.
   property var resetList: []
   property double resetListAt: 0
@@ -112,6 +123,17 @@ Panel {
   readonly property color accent: Commons.Color.accent
   readonly property color urgent: bar ? bar.urgent : Commons.Color.urgent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
+
+  // Green and red from the current Omarchy theme (colors.toml), for the
+  // Active / Make active button; followed live when the theme changes.
+  property color greenColor: "#7fb069"
+  property color redColor: urgent
+  function readThemeColors(text) {
+    var g = /^\s*green\s*=\s*"(#[0-9a-fA-F]{6})"/m.exec(text)
+    var r = /^\s*red\s*=\s*"(#[0-9a-fA-F]{6})"/m.exec(text)
+    if (g) greenColor = g[1]
+    if (r) redColor = r[1]
+  }
 
   // Provider logos come from Omarchy's own agents plugin at runtime, so this
   // plugin ships no brand files. White marks have an `<id>-light.svg` twin
@@ -459,9 +481,17 @@ Panel {
     else toggle()
   }
 
-  onOpenedChanged: if (opened) { nowMs = Date.now(); cursor = -1; detailView = "limits"; readState() }
+  onOpenedChanged: if (opened) { nowMs = Date.now(); cursor = -1; detailView = "limits"; viewing = ({}); readState() }
   onExtrasChanged: readState()
   Component.onCompleted: readState()
+
+  FileView {
+    path: root.stateHome + "/omarchy/current/theme/colors.toml"
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.readThemeColors(String(text()).slice(0, 20000))
+  }
 
   Process {
     id: logoProc
@@ -649,6 +679,8 @@ Panel {
         if (dy !== 0) { root.stepProvider(dy); return }
         if (root.targets.length === 0) return
         root.cursor = root.cursor < 0 ? 0 : Math.max(0, Math.min(root.targets.length - 1, root.cursor + dx))
+        var t = root.targets[root.cursor]
+        if (t && t.a !== "") root.viewAccount(t.p, t.a)
       }
       onActivateRequested: if (root.cursor >= 0) root.activate(root.targets[root.cursor])
       onCloseRequested: root.close()
@@ -813,7 +845,9 @@ Panel {
                 width: parent.width
               }
               Label {
-                text: root.selected ? (root.selected.noData ? strings.t("noData") : root.selected.plan) : ""
+                text: !root.selected ? "" : root.selected.noData ? strings.t("noData")
+                  : root.viewedOfSelected ? root.viewedOfSelected.label + (root.viewedOfSelected.plan ? "  ·  " + root.viewedOfSelected.plan : "")
+                  : root.selected.plan
                 visible: text !== ""
                 color: root.dim
                 font.pixelSize: root.fs(Style.font.bodySmall)
@@ -825,14 +859,24 @@ Panel {
               anchors.right: parent.right
               anchors.verticalCenter: parent.verticalCenter
               spacing: root.sp(4)
+              // Green when the account on show is the one new sessions use;
+              // red otherwise, and clicking makes it the one.
               Button {
-                text: strings.t("tab.limits")
+                readonly property var viewed: root.viewedOfSelected
+                readonly property bool isActive: viewed !== null && viewed.active
+                visible: viewed !== null
+                iconText: isActive ? "󰄬" : "󰐊"
+                text: isActive ? strings.t("status.active") : strings.t("status.makeActive")
+                tooltipText: viewed === null ? "" : isActive ? strings.t("status.activeTip").arg(viewed.label)
+                  : strings.t("status.makeActiveTip").arg(viewed.label)
                 fontSize: root.fs(Style.font.bodySmall)
-                foreground: root.fg
+                foreground: isActive ? root.greenColor : root.redColor
                 fontFamily: root.fontFamily
                 bordered: true
-                active: root.detailView === "limits"
-                onClicked: root.detailView = "limits"
+                onClicked: {
+                  root.detailView = "limits"
+                  if (!isActive && viewed) root.useAccount(root.selected.id, viewed.id)
+                }
               }
               Button {
                 iconText: "󰒓"
@@ -843,7 +887,7 @@ Panel {
                 fontFamily: root.fontFamily
                 bordered: true
                 active: root.detailView === "settings"
-                onClicked: root.detailView = "settings"
+                onClicked: root.detailView = root.detailView === "settings" ? "limits" : "settings"
               }
             }
           }
@@ -938,7 +982,9 @@ Panel {
   component ProviderBlock: Item {
     id: block
     property var p
-    readonly property var shownWindows: Model.visibleWindows(p.windows)
+    readonly property var viewed: root.viewedAccount(p)
+    readonly property bool viewingOther: viewed !== null && !viewed.active
+    readonly property var shownWindows: Model.visibleWindows(viewed ? viewed.windows : p.windows)
     readonly property bool manyAccounts: p.switchable && p.accounts.length > 3
     implicitHeight: inner.implicitHeight
 
@@ -946,6 +992,16 @@ Panel {
       id: inner
       width: block.width
       spacing: root.sp(root.cards ? 16 : 10)
+
+      Label {
+        visible: block.viewingOther
+        width: parent.width
+        text: block.viewingOther ? strings.t("viewing.note").arg(block.viewed.label).arg(block.p.accounts.filter(function(a) { return a.active }).map(function(a) { return a.label })[0] || "") : ""
+        color: root.redColor
+        font.pixelSize: root.fs(Style.font.bodySmall)
+        wrapMode: Text.Wrap
+        elide: Text.ElideNone
+      }
 
       // Cards: one tile per window, up to three across.
       Grid {
@@ -1041,7 +1097,8 @@ Panel {
       // to a count; opening it lists each one with its deadline.
       Column {
         id: bankedBox
-        visible: root.bankedOf(block.p) !== null
+        // Banked resets belong to the active account.
+        visible: root.bankedOf(block.p) !== null && !block.viewingOther
         width: parent.width
         spacing: root.sp(6)
 
@@ -1116,7 +1173,7 @@ Panel {
         }
       }
 
-      // Accounts: click (or arrows + Enter) to make one the account new sessions use.
+      // Accounts: click (or ← →) to see one's limits; Make active or Enter switches.
       Flow {
         visible: block.p.switchable
         width: parent.width
@@ -1128,14 +1185,14 @@ Panel {
             text: root.chipName(modelData.label) + (!modelData.active ? "  ·  " + root.pct(root.shown(modelData.peak)) : "")
             iconText: modelData.active ? "󰄬" : ""
             tooltipText: modelData.active ? strings.t("account.active").arg(modelData.email || modelData.label)
-              : strings.t("account.use").arg(modelData.email || modelData.label)
+              : strings.t("account.view").arg(modelData.email || modelData.label)
             fontSize: root.fs(Style.font.body)
             foreground: root.fg
             fontFamily: root.fontFamily
             bordered: true
-            active: modelData.active
+            active: block.viewed !== null && block.viewed.id === modelData.id
             hasCursor: root.cursor === root.targetIndex(block.p.id, modelData.id)
-            onClicked: root.useAccount(block.p.id, modelData.id)
+            onClicked: root.viewAccount(block.p.id, modelData.id)
             onHovered: function(h) { if (h) root.cursor = root.targetIndex(block.p.id, modelData.id) }
           }
         }
@@ -1622,6 +1679,7 @@ Panel {
     property string providerId: ""
     readonly property int keyIndex: root.targetIndex(providerId, account.id)
     readonly property bool lit: rowMouse.containsMouse || root.cursor === keyIndex
+    readonly property bool viewedRow: root.viewedOfSelected !== null && root.viewedOfSelected.id === account.id
     implicitHeight: Math.max(rowName.implicitHeight, rowPct.implicitHeight) + root.sp(14)
 
     Rectangle {
@@ -1629,7 +1687,7 @@ Panel {
       anchors.leftMargin: -root.sp(6)
       anchors.rightMargin: -root.sp(6)
       radius: Style.cornerRadius
-      color: accountRow.account.active ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.14)
+      color: accountRow.viewedRow ? Qt.rgba(root.accent.r, root.accent.g, root.accent.b, 0.14)
         : Qt.rgba(root.fg.r, root.fg.g, root.fg.b, accountRow.lit ? 0.07 : 0)
     }
     Text {
@@ -1639,7 +1697,7 @@ Panel {
       width: root.sp(20)
       textFormat: Text.PlainText
       text: accountRow.account.active ? "󰄬" : "󰄰"
-      color: accountRow.account.active ? root.accent : root.dim
+      color: accountRow.account.active ? root.greenColor : root.dim
       font.family: root.fontFamily
       font.pixelSize: root.fs(Style.font.body)
     }
@@ -1688,14 +1746,14 @@ Panel {
       id: rowMouse
       anchors.fill: parent
       hoverEnabled: true
-      cursorShape: accountRow.account.active ? Qt.ArrowCursor : Qt.PointingHandCursor
+      cursorShape: Qt.PointingHandCursor
       onEntered: root.cursor = accountRow.keyIndex
-      onClicked: root.useAccount(accountRow.providerId, accountRow.account.id)
+      onClicked: root.viewAccount(accountRow.providerId, accountRow.account.id)
     }
     PanelToolTip {
       visible: rowMouse.containsMouse
       text: accountRow.account.active ? strings.t("account.active").arg(accountRow.account.email || accountRow.account.label)
-        : strings.t("account.use").arg(accountRow.account.email || accountRow.account.label)
+        : strings.t("account.view").arg(accountRow.account.email || accountRow.account.label)
     }
   }
 

@@ -13,7 +13,6 @@
   "time.h": "%1h",
   "time.m": "%1m",
   "account.active": "New sessions use %1",
-  "account.use": "Use %1 for new sessions",
   "account.add": "Add an account (opens a sign-in terminal)",
   "auto.on": "Auto-switch on",
   "auto.off": "Auto-switch off",
@@ -100,7 +99,6 @@
   "account.addShort": "Add account",
   "side.displaySettings": "Applies to every agent",
   "side.close": "Close",
-  "tab.limits": "Limits",
   "tab.settings": "Settings",
   "tab.settingsTip": "In the bar, usage, files and per-account settings (g)",
   "banked.short": {
@@ -114,5 +112,11 @@
   "display.size": "Size",
   "display.small": "Small",
   "display.medium": "Medium",
-  "display.large": "Large"
+  "display.large": "Large",
+  "status.active": "Active",
+  "status.makeActive": "Make active",
+  "status.activeTip": "New sessions use %1",
+  "status.makeActiveTip": "New sessions use another account. Click to use %1 instead.",
+  "account.view": "Show the limits of %1",
+  "viewing.note": "Showing %1's limits · new sessions use %2"
 }
