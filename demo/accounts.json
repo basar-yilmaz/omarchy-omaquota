@@ -1,0 +1,511 @@
+{
+  "_comment": "Invented accounts for OmaQuota's demo mode (setting demoFile). resetsInMin/expiresInMin are minutes from now.",
+  "accountList": [
+    {
+      "provider": "claude",
+      "name": "Claude",
+      "active": "work",
+      "switch": "auto",
+      "threshold": 95,
+      "accounts": [
+        {
+          "id": "work",
+          "label": "Work",
+          "email": "work@example.com",
+          "plan": "Max 5x",
+          "primary": true,
+          "active": true,
+          "signedIn": true,
+          "home": "~/.claude",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.62,
+              "resetsInMin": 131
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.48,
+              "resetsInMin": 2950
+            }
+          ]
+        },
+        {
+          "id": "personal",
+          "label": "Personal",
+          "email": "personal@example.com",
+          "plan": "Pro",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/claude/personal",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.12,
+              "resetsInMin": 240
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.31,
+              "resetsInMin": 4100
+            }
+          ]
+        },
+        {
+          "id": "acme",
+          "label": "Client · Acme Corporation",
+          "email": "acme@example.com",
+          "plan": "Max 20x",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/claude/acme",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.93,
+              "resetsInMin": 35
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.71,
+              "resetsInMin": 1600
+            }
+          ]
+        },
+        {
+          "id": "side",
+          "label": "Side project",
+          "email": "side@example.com",
+          "plan": "Pro",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/claude/side",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.0,
+              "resetsInMin": -10
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.05,
+              "resetsInMin": 8000
+            }
+          ]
+        },
+        {
+          "id": "lab",
+          "label": "Research lab",
+          "email": "lab@example.com",
+          "plan": "Max 5x",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/claude/lab",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.44,
+              "resetsInMin": 200
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.88,
+              "resetsInMin": 900
+            }
+          ]
+        },
+        {
+          "id": "team",
+          "label": "Team shared",
+          "email": "team@example.com",
+          "plan": "Team",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/claude/team",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.27,
+              "resetsInMin": 95
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.39,
+              "resetsInMin": 5200
+            }
+          ]
+        },
+        {
+          "id": "weekend",
+          "label": "Weekend",
+          "email": "weekend@example.com",
+          "plan": "Pro",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/claude/weekend",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.0,
+              "resetsInMin": -10
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.0,
+              "resetsInMin": 9000
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "provider": "codex",
+      "name": "Codex",
+      "active": "main",
+      "switch": "manual",
+      "threshold": 95,
+      "accounts": [
+        {
+          "id": "main",
+          "label": "Main",
+          "email": "main@example.com",
+          "plan": "Plus",
+          "primary": true,
+          "active": true,
+          "signedIn": true,
+          "home": "~/.codex",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.11,
+              "resetsInMin": 150
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.34,
+              "resetsInMin": 1400
+            }
+          ]
+        },
+        {
+          "id": "work",
+          "label": "Work",
+          "email": "work@example.com",
+          "plan": "Pro",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/codex/work",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.55,
+              "resetsInMin": 60
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.62,
+              "resetsInMin": 3000
+            }
+          ]
+        },
+        {
+          "id": "acme",
+          "label": "Client · Acme",
+          "email": "acme@example.com",
+          "plan": "Business",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/codex/acme",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.97,
+              "resetsInMin": 20
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.81,
+              "resetsInMin": 700
+            }
+          ]
+        },
+        {
+          "id": "lab",
+          "label": "Lab",
+          "email": "lab@example.com",
+          "plan": "Plus",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/codex/lab",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.0,
+              "resetsInMin": -10
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.12,
+              "resetsInMin": 6000
+            }
+          ]
+        },
+        {
+          "id": "alt",
+          "label": "Alt",
+          "email": "alt@example.com",
+          "plan": "Plus",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/codex/alt",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.33,
+              "resetsInMin": 100
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.21,
+              "resetsInMin": 7000
+            }
+          ]
+        },
+        {
+          "id": "oss",
+          "label": "Open source",
+          "email": "oss@example.com",
+          "plan": "Pro",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/codex/oss",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.08,
+              "resetsInMin": 280
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.5,
+              "resetsInMin": 2200
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "provider": "grok",
+      "name": "Grok",
+      "active": "main",
+      "switch": "manual",
+      "threshold": 95,
+      "accounts": [
+        {
+          "id": "main",
+          "label": "Main",
+          "email": "main@example.com",
+          "plan": "SuperGrok",
+          "primary": true,
+          "active": true,
+          "signedIn": true,
+          "home": "~/.grok",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.18,
+              "resetsInMin": 170
+            },
+            {
+              "label": "Weekly (7-day)",
+              "percent": 0.07,
+              "resetsInMin": 6100
+            }
+          ]
+        },
+        {
+          "id": "spare",
+          "label": "Spare",
+          "email": "spare@example.com",
+          "plan": "Free",
+          "primary": false,
+          "active": false,
+          "signedIn": true,
+          "home": "~/.local/state/omarchy/agents/accounts/grok/spare",
+          "limits": [
+            {
+              "label": "Session (5-hour)",
+              "percent": 0.0,
+              "resetsInMin": -5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "claudeSettings": {
+    "remoteControlAtStartup": false,
+    "promptSuggestionEnabled": true,
+    "awaySummaryEnabled": true,
+    "agentPushNotifEnabled": false
+  },
+  "records": {
+    "claude": {
+      "id": "claude",
+      "todayPrompts": 42,
+      "todaySessions": 7,
+      "todayTotalTokens": 18462381,
+      "totalPrompts": 3120,
+      "totalSessions": 410,
+      "limitsFetchedAt": 0,
+      "limitsStale": false
+    },
+    "codex": {
+      "id": "codex",
+      "todayPrompts": 13,
+      "todaySessions": 4,
+      "todayTotalTokens": 914196,
+      "totalPrompts": 860,
+      "totalSessions": 122,
+      "limitsFetchedAt": 0,
+      "resetCredits": {
+        "available": 4,
+        "expiresInMin": 3100
+      }
+    },
+    "cursor": {
+      "id": "cursor",
+      "name": "Cursor",
+      "tierLabel": "Pro",
+      "ready": true,
+      "limits": [
+        {
+          "label": "Monthly",
+          "percent": 0.58,
+          "resetsInMin": 18000
+        }
+      ]
+    },
+    "kimi": {
+      "id": "kimi",
+      "name": "Kimi",
+      "tierLabel": "Moderato",
+      "ready": true,
+      "todayPrompts": 5,
+      "todaySessions": 2,
+      "todayTotalTokens": 250000,
+      "limits": [
+        {
+          "label": "5h window",
+          "percent": 0.41,
+          "resetsInMin": 75
+        },
+        {
+          "label": "Weekly (7-day)",
+          "percent": 0.22,
+          "resetsInMin": 5000
+        }
+      ]
+    },
+    "zai": {
+      "id": "zai",
+      "name": "Z.ai",
+      "tierLabel": "GLM Coding Pro",
+      "ready": true,
+      "limits": [
+        {
+          "label": "5h window",
+          "percent": 0.86,
+          "resetsInMin": 40
+        }
+      ]
+    },
+    "copilot": {
+      "id": "copilot",
+      "name": "GitHub Copilot",
+      "tierLabel": "Pro+",
+      "ready": true,
+      "limits": [
+        {
+          "label": "Premium requests (monthly)",
+          "percent": 0.34,
+          "resetsInMin": 24000
+        }
+      ]
+    },
+    "openrouter": {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "tierLabel": "",
+      "ready": false,
+      "limits": []
+    },
+    "acme-agent": {
+      "id": "acme-agent",
+      "name": "Acme Code Assistant Enterprise",
+      "tierLabel": "Enterprise · Annual",
+      "ready": true,
+      "limits": [
+        {
+          "label": "Daily requests",
+          "percent": 0.97,
+          "resetsInMin": 300
+        },
+        {
+          "label": "Weekly (7-day)",
+          "percent": 0.5,
+          "resetsInMin": 4000
+        },
+        {
+          "label": "Monthly",
+          "percent": 0.3,
+          "resetsInMin": 20000
+        },
+        {
+          "label": "Org seats",
+          "percent": 0.66
+        }
+      ]
+    }
+  },
+  "codexResets": {
+    "credits": [
+      {
+        "title": "Full reset (Weekly + 5 hr)",
+        "status": "available",
+        "expiresInMin": 3100
+      },
+      {
+        "title": "Full reset (Weekly + 5 hr)",
+        "status": "available",
+        "expiresInMin": 38000
+      },
+      {
+        "title": "Full reset (Weekly + 5 hr)",
+        "status": "available",
+        "expiresInMin": 39500
+      },
+      {
+        "title": "Referral reset",
+        "status": "available",
+        "expiresInMin": 42000
+      },
+      {
+        "title": "Full reset (Weekly + 5 hr)",
+        "status": "redeemed",
+        "expiresInMin": -500
+      }
+    ]
+  }
+}

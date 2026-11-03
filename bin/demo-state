@@ -1,0 +1,26 @@
+#!/bin/bash
+# Demo data in the shape the panel reads from Omarchy, with times relative to
+# now so screenshots never go stale: any "resetsInMin" / "expiresInMin"
+# becomes "resetsAt" / "expiresAt".
+#   demo-state <demo.json> [record-id...]   account list, Claude settings, records
+#   demo-state --resets <demo.json>         the Codex banked-reset list
+set -uo pipefail
+
+live='walk(if type == "object" then
+  (if has("resetsInMin") then .resetsAt = ((now + .resetsInMin * 60) | todate) | del(.resetsInMin) else . end)
+  | (if has("expiresInMin") then .expiresAt = ((now + .expiresInMin * 60) | todate) | del(.expiresInMin) else . end)
+  | (if has("available") and has("expiresAt") then .nextExpiresAt = .expiresAt | del(.expiresAt) else . end)
+  else . end)'
+
+if [[ ${1:-} == --resets ]]; then
+  jq -c "(.codexResets // {credits: []}) | $live" "${2:-}" 2>/dev/null || echo '{"credits":[]}'
+  exit 0
+fi
+
+file=${1:-}
+shift
+jq -c "(.accountList // []) | $live" "$file" 2>/dev/null || echo "[]"
+jq -c '.claudeSettings // null' "$file" 2>/dev/null || echo null
+for id in "$@"; do
+  jq -c --arg id "$id" "(.records[\$id] // null) | $live" "$file" 2>/dev/null || echo null
+done

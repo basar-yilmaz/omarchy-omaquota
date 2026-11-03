@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.basar-yilmaz.omaquota",
+  "name": "OmaQuota",
+  "version": "0.1.0",
+  "author": "basar-yilmaz",
+  "license": "MIT",
+  "description": "Limits, reset times and one-click account switching for Claude Code, Codex and Grok, plus limits for Cursor, Kimi, z.ai and every other Omarchy usage collector. Two styles: Cards and Compact.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "activation": "on-demand",
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "OmaQuota",
+    "description": "Per agent: logo and what's left in the bar, limits and resets on hover, one-click account switching with settings that follow the account, usage details and files in a drawer. Cards or Compact.",
+    "category": "AI",
+    "aliases": [
+      "agents",
+      "accounts",
+      "limits",
+      "claude",
+      "codex"
+    ],
+    "allowMultiple": false,
+    "defaults": {
+      "style": "Cards",
+      "extraProviders": "",
+      "alertAt": 90,
+      "refreshIntervalSec": 900,
+      "showPercent": true,
+      "barItems": "",
+      "valueMode": "Left",
+      "logoStyle": "Colour",
+      "barReset": false,
+      "accountSettings": {},
+      "demoFile": "",
+      "barAllAccounts": "",
+      "uiSize": "Medium"
+    },
+    "schema": [
+      {
+        "key": "style",
+        "type": "enum",
+        "label": "Style",
+        "options": [
+          "Cards",
+          "Compact"
+        ],
+        "defaultValue": "Cards",
+        "description": "Cards: a framed tile per agent with large figures. Compact: one thin line per limit. Right-click the bar icon to swap."
+      },
+      {
+        "key": "uiSize",
+        "type": "enum",
+        "label": "Panel size",
+        "options": [
+          "Small",
+          "Medium",
+          "Large"
+        ],
+        "defaultValue": "Medium",
+        "description": "Scales the panel's text and spacing. The bar itself keeps Omarchy's sizes."
+      },
+      {
+        "key": "valueMode",
+        "type": "enum",
+        "label": "Numbers show",
+        "options": [
+          "Left",
+          "Used",
+          "Both"
+        ],
+        "defaultValue": "Left",
+        "description": "Show what's left of each limit, how much is used, or both (left as the main number, used beside it). The bar shows what's left in Both."
+      },
+      {
+        "key": "logoStyle",
+        "type": "enum",
+        "label": "Bar logos",
+        "options": [
+          "Colour",
+          "Mono"
+        ],
+        "defaultValue": "Colour",
+        "description": "Brand colours, or tinted to match the bar text."
+      },
+      {
+        "key": "barReset",
+        "type": "boolean",
+        "label": "Reset time in the bar",
+        "defaultValue": false,
+        "description": "Adds a short countdown, such as 46% · 2d, next to each agent in the bar."
+      },
+      {
+        "key": "barItems",
+        "type": "string",
+        "label": "Agents in the bar",
+        "defaultValue": "",
+        "description": "Set from each agent's gear in the panel. Format: agent:limit, for example claude:Week,codex:5h. The bar then shows each one's logo and what's left of that limit."
+      },
+      {
+        "key": "barAllAccounts",
+        "type": "string",
+        "label": "Agents showing every account in the bar",
+        "defaultValue": "",
+        "description": "Set from an agent's Settings tab (In the bar → Accounts). Comma-separated agent ids, for example claude. Those agents show each account's share of the chosen limit, tagged by its first letters."
+      },
+      {
+        "key": "extraProviders",
+        "type": "string",
+        "label": "Extra providers",
+        "defaultValue": "",
+        "description": "Comma-separated Omarchy usage collectors shown next to Claude Code, Codex and Grok, for example cursor,kimi,zai. Any name from `ls $OMARCHY_PATH/bin/omarchy-agent-usage-*` works."
+      },
+      {
+        "key": "alertAt",
+        "type": "integer",
+        "label": "Warn at (%)",
+        "min": 50,
+        "max": 100,
+        "step": 5,
+        "defaultValue": 90,
+        "description": "One desktop notification per limit window when it reaches this. Agents with two or more accounts use Omarchy's own threshold and auto-switch instead."
+      },
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 60,
+        "max": 3600,
+        "step": 60,
+        "defaultValue": 900,
+        "description": "How often limits are fetched in the background. Short intervals can hit Anthropic's rate limit."
+      },
+      {
+        "key": "showPercent",
+        "type": "boolean",
+        "label": "Show what's left of the tightest limit next to the icon",
+        "defaultValue": true,
+        "description": "Used while no agent is picked for the bar."
+      },
+      {
+        "key": "demoFile",
+        "type": "path",
+        "label": "Demo data file",
+        "defaultValue": "",
+        "description": "For screenshots: show the invented accounts in a JSON file (see demo/accounts.json) instead of your own. Switching and settings writes are off while it is set."
+      }
+    ]
+  }
+}

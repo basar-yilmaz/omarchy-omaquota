@@ -1,0 +1,29 @@
+#!/bin/bash
+# Merge an account's overlay of top-level true/false values into Claude Code's
+# settings.json, atomically, keeping every other key and the file's mode.
+# usage: apply-settings <path/to/settings.json> '{"remoteControlAtStartup":true}'
+set -euo pipefail
+
+file=${1:-}
+overlay=${2:-}
+
+if [[ $file != */settings.json || ! -f $file || -L $file ]]; then
+  echo "apply-settings: not a regular settings.json: $file" >&2
+  exit 1
+fi
+if ! jq -e 'type == "object" and length > 0 and all(.[]; type == "boolean")
+    and all(keys[]; test("^[A-Za-z][A-Za-z0-9_]{0,63}$"))' <<<"$overlay" >/dev/null 2>&1; then
+  echo "apply-settings: the overlay must map plain keys to true or false" >&2
+  exit 1
+fi
+if ! jq -e 'type == "object"' "$file" >/dev/null 2>&1; then
+  echo "apply-settings: $file is not a JSON object; leaving it alone" >&2
+  exit 1
+fi
+
+tmp=$(mktemp "$(dirname "$file")/.settings.json.omaquota.XXXXXX")
+trap 'rm -f "$tmp"' EXIT
+jq --argjson o "$overlay" '. * $o' "$file" >"$tmp"
+chmod --reference="$file" "$tmp"
+mv -f "$tmp" "$file"
+trap - EXIT

@@ -1,0 +1,14 @@
+[
+  {"provider":"claude","name":"Claude","active":"work","switch":"auto","threshold":95,"accounts":[
+    {"id":"main","label":"Main","email":"me@example.com","plan":"Max 5x","primary":true,"active":false,"signedIn":true,
+     "limits":[{"label":"Session (5-hour)","percent":0.1,"resetsAt":"2026-11-03T16:50:00Z"}]},
+    {"id":"work","label":"<b>Work</b>","email":"work@example.com","plan":"Pro","primary":false,"active":true,"signedIn":true,
+     "limits":[{"label":"Session (5-hour)","percent":0.96,"resetsAt":"2026-11-03T16:50:00Z"},
+               {"label":"Weekly (7-day)","percent":0.52,"resetsAt":"2026-11-05T19:00:00Z"}]}]},
+  {"provider":"codex","name":"Codex","active":"main","switch":"manual","threshold":95,"accounts":[
+    {"id":"main","label":"Main","email":"","plan":"Plus","primary":true,"active":true,"signedIn":true,
+     "limits":[{"label":"5h window","percent":0.0,"resetsAt":"2026-10-31T04:37:13Z"},
+               {"label":"Weekly (7-day)","percent":0.25,"resetsAt":"2026-11-04T07:25:00Z"}]}]},
+  {"provider":"grok","name":"Grok","active":"main","switch":"manual","threshold":95,"accounts":[
+    {"id":"main","label":"Main","primary":true,"active":true,"signedIn":false,"limits":[]}]}
+]

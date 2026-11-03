@@ -1,0 +1,114 @@
+#!/usr/bin/python3 -I
+"""List Codex's banked resets (free full rate-limit resets) with their deadlines.
+
+usage: codex-resets [codex-home]
+
+Asks the Codex CLI's own app-server (`account/rateLimits/read`), the way
+Omarchy's usage collector does, so no login is read here. Prints one JSON
+object: {"credits": [{"title", "type", "status", "expiresAt", "grantedAt"}...]} sorted by
+deadline, or {"error": "..."}.
+"""
+import json
+import os
+import select
+import shutil
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+
+MAX_CREDITS = 50
+
+
+def iso(value):
+  """Seconds or milliseconds since the epoch, or an ISO string, as ISO-8601 UTC."""
+  if isinstance(value, str):
+    try:
+      return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
+    except ValueError:
+      return ""
+  if isinstance(value, (int, float)) and value > 0:
+    seconds = value / 1000 if value > 1e11 else value
+    try:
+      return datetime.fromtimestamp(seconds, timezone.utc).isoformat()
+    except (OverflowError, OSError, ValueError):
+      return ""
+  return ""
+
+
+def clean(credits):
+  out = []
+  for c in credits if isinstance(credits, list) else []:
+    if not isinstance(c, dict):
+      continue
+    out.append({
+      "title": str(c.get("title") or "")[:60],
+      "type": str(c.get("resetType") or "")[:24],
+      "status": str(c.get("status") or "")[:24],
+      "expiresAt": iso(c.get("expiresAt")),
+      "grantedAt": iso(c.get("grantedAt") or c.get("createdAt")),
+    })
+    if len(out) >= MAX_CREDITS:
+      break
+  # Soonest deadline first; ones without a deadline last.
+  out.sort(key=lambda c: (c["expiresAt"] == "", c["expiresAt"]))
+  return out
+
+
+def request(proc, state, request_id, method, params=None, timeout=10):
+  proc.stdin.write(json.dumps({"id": request_id, "method": method, "params": params or {}}) + "\n")
+  proc.stdin.flush()
+  deadline = time.monotonic() + timeout
+  fd = proc.stdout.fileno()
+  while time.monotonic() < deadline:
+    while b"\n" in state["pending"]:
+      line, state["pending"] = state["pending"].split(b"\n", 1)
+      try:
+        message = json.loads(line)
+      except ValueError:
+        continue
+      if isinstance(message, dict) and message.get("id") == request_id:
+        return message
+    ready, _, _ = select.select([fd], [], [], 0.25)
+    if ready:
+      chunk = os.read(fd, 65536)
+      if not chunk:
+        break
+      state["pending"] += chunk
+    elif proc.poll() is not None:
+      break
+  raise RuntimeError(f"Codex did not answer {method}")
+
+
+def main():
+  codex = shutil.which("codex")
+  if not codex:
+    return {"error": "codex not found in PATH"}
+  env = dict(os.environ)
+  if len(sys.argv) > 1 and sys.argv[1]:
+    env["CODEX_HOME"] = sys.argv[1]
+  proc = subprocess.Popen([codex, "-s", "read-only", "-a", "on-request", "app-server"],
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                          text=True, env=env)
+  # stdin is written as text; stdout is read as raw bytes off its fd.
+  state = {"pending": b""}
+  try:
+    request(proc, state, 1, "initialize", {"clientInfo": {"name": "omaquota", "version": "1"}})
+    proc.stdin.write(json.dumps({"method": "initialized", "params": {}}) + "\n")
+    proc.stdin.flush()
+    answer = request(proc, state, 2, "account/rateLimits/read")
+    result = answer.get("result") if isinstance(answer.get("result"), dict) else {}
+    granted = (result.get("rateLimitResetCredits") or {}).get("credits")
+    return {"credits": clean(granted)}
+  except Exception as exc:
+    return {"error": str(exc)[:200]}
+  finally:
+    try:
+      proc.terminate()
+      proc.wait(timeout=2)
+    except Exception:
+      proc.kill()
+
+
+if __name__ == "__main__":
+  print(json.dumps(main()))

@@ -1,0 +1,14 @@
+#!/bin/bash
+# A stand-in Codex app-server for tests/codex-resets.test.sh.
+while IFS= read -r line; do
+  id=$(jq -r '.id // empty' <<<"$line"); method=$(jq -r '.method' <<<"$line")
+  case $method in
+  initialize) echo "{\"id\":$id,\"result\":{}}" ;;
+  account/rateLimits/read)
+    echo '{"method":"some/notification","params":{}}'
+    echo "{\"id\":$id,\"result\":{\"rateLimitResetCredits\":{\"credits\":[
+      {\"id\":\"b\",\"title\":\"Full reset\",\"status\":\"available\",\"expiresAt\":1796000000,\"grantedAt\":1793400000,\"description\":\"x\"},
+      {\"id\":\"a\",\"title\":\"<b>Early</b>\",\"status\":\"available\",\"expiresAt\":\"2026-11-06T22:13:50Z\",\"resetType\":\"codexRateLimits\"},
+      {\"id\":\"c\",\"title\":\"Used one\",\"status\":\"redeemed\",\"expiresAt\":1790000000000}]}}}" | jq -c . ;;
+  esac
+done
