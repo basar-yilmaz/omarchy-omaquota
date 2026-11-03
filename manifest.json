@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "author": "basar-yilmaz",
   "license": "MIT",
-  "description": "Limits, reset times and one-click account switching for Claude Code, Codex and Grok, plus limits for Cursor, Kimi, z.ai and every other Omarchy usage collector. Two styles: Cards and Compact.",
+  "description": "Limits, reset times and one-click account switching for Claude Code, Codex and Grok, plus limits for Cursor, Kimi, z.ai and every other Omarchy usage collector. Two styles: Cards and Compact. Requires Omarchy 4.5 or newer.",
   "kinds": [
     "bar-widget"
   ],

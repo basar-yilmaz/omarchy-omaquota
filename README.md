@@ -1,7 +1,7 @@
 # OmaQuota
 
 Usage limits, reset times and account switching for your coding agents, in
-the Omarchy bar.
+the Omarchy bar. Requires Omarchy 4.5 or newer.
 
 ![OmaQuota panel](preview.png)
 
@@ -38,7 +38,10 @@ the Omarchy bar.
 
 ## Requirements
 
-- Omarchy 4.5 or newer (`omarchy agent account --help` must work)
+- **Omarchy 4.5 or newer.** OmaQuota is built on the agent account commands
+  and shell features introduced in Omarchy 4.5 (currently a release
+  candidate). Omarchy 4.0.x is not supported. Check with
+  `omarchy agent account --help`.
 - `jq` and `notify-send` (shipped with Omarchy)
 - `python3` (shipped with Omarchy), used to list Codex banked resets
 - The agent CLIs you use, for example `claude`, `codex` or `grok`
