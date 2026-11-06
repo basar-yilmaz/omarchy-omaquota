@@ -116,6 +116,25 @@ function details(rec) {
   }
 }
 
+// Collector messages remain the authority; classification only drives presentation/retry.
+function health(rec, connected) {
+  var message = rec ? str(rec.usageStatusText, 200) + " " + str(rec.authHelpText, 300) : ""
+  var state = !connected ? "disconnected" : "ok"
+  if (/429|rate.limit|too many requests/i.test(message)) state = "rateLimited"
+  else if (/sign.in expired|unauthorized|invalid.*credential|401/i.test(message)) state = "expired"
+  else if (/limits paused/i.test(message)) state = "paused"
+  else if (/waiting for auth/i.test(message)) state = "disconnected"
+  else if (rec && (rec.limitsStale === true || rec.retryAdvised === true || /unavailable|couldn't reach/i.test(message))) state = "unavailable"
+  return { state: state, note: message.trim() }
+}
+
+function retryDelay(status, failures) {
+  if (status.state === "ok") return 0
+  var delay = Math.min(1800000, 300000 * Math.pow(2, Math.min(3, Math.max(0, failures - 1))))
+  var hint = /retry after\s+(\d+(?:\.\d+)?)s/i.exec(status.note)
+  return hint ? Math.max(delay, Math.min(86400000, Number(hint[1]) * 1000)) : delay
+}
+
 // accountList: `omarchy agent account list --json`. records: usage records
 // (null when missing). Records of account providers only add details; the
 // rest are extra providers, in the order asked for.
@@ -150,8 +169,8 @@ function normalize(accountList, records, now) {
       if (acc.active) active = acc
       accounts.push(acc)
     }
-    if (!accounts.some(function(x) { return x.signedIn })) continue
     if (!active) active = accounts[0]
+    if (!active) continue
     out.push({
       id: p.provider,
       name: str(p.name, 40) || p.provider,
@@ -162,7 +181,8 @@ function normalize(accountList, records, now) {
       accounts: accounts,
       windows: active.windows,
       peak: active.peak,
-      noData: false,
+      noData: active.windows.length === 0,
+      health: health(byId[p.provider], active.signedIn),
       details: details(byId[p.provider])
     })
   }
@@ -181,6 +201,7 @@ function normalize(accountList, records, now) {
       windows: w,
       peak: peak(w),
       noData: w.length === 0,
+      health: health(rec, rec.ready !== false),
       details: details(rec)
     })
   }
@@ -194,7 +215,7 @@ function alerts(providers, thresholdPct, seen) {
   var out = []
   for (var i = 0; i < (providers || []).length; i++) {
     var p = providers[i]
-    if (p.accounts.length >= 2) continue
+    if (p.accounts.length >= 2 || (p.health && p.health.state !== "ok")) continue
     for (var j = 0; j < p.windows.length; j++) {
       var w = p.windows[j]
       if (w.fresh || w.percent * 100 < thresholdPct) continue
@@ -452,7 +473,7 @@ function humanizeKey(key) {
 
 // Loaded by node for the tests; QML never sees `module`.
 if (typeof module !== "undefined") module.exports = {
-  validId: validId, parseExtras: parseExtras, shortLabel: shortLabel, windows: windows,
+  health: health, retryDelay: retryDelay, validId: validId, parseExtras: parseExtras, shortLabel: shortLabel, windows: windows,
   peak: peak, normalize: normalize, alerts: alerts, countdown: countdown, level: level,
   escapeMarkup: escapeMarkup, parseBarItems: parseBarItems, serializeBarItems: serializeBarItems,
   barEntries: barEntries, viewedAccount: viewedAccount, pickWindow: pickWindow, accountTags: accountTags, parseIdSet: parseIdSet, serializeIdSet: serializeIdSet, visibleWindows: visibleWindows, details: details, banked: banked, resetRows: resetRows, shortCountdown: shortCountdown,

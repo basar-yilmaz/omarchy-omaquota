@@ -27,7 +27,7 @@ Panel {
 
   // ---------- Settings (shell.json inline entry) ----------
   readonly property var extras: Model.parseExtras(setting("extraProviders", ""))
-  readonly property int refreshSec: Math.max(60, Math.min(3600, Number(setting("refreshIntervalSec", 900)) || 900))
+  readonly property int refreshSec: Math.max(60, Math.min(3600, Number(setting("refreshIntervalSec", 120)) || 120))
   readonly property int alertAt: Math.max(50, Math.min(100, Number(setting("alertAt", 90)) || 90))
   readonly property bool cards: setting("style", "Cards") !== "Compact"
   readonly property bool showPercent: setting("showPercent", true) !== false
@@ -52,6 +52,10 @@ Panel {
   property var claudeSettings: null
   property double nowMs: Date.now()
   property double readAt: 0
+  // shortcut: cooldowns reset on shell reload; persist them if reloads cause repeated requests.
+  property var retries: ({})
+  property var refreshedIds: []
+  property string refreshError: ""
   property bool updating: false
   property bool readAgain: false
   property string applyFailed: ""
@@ -223,7 +227,26 @@ Panel {
     }
     nowMs = Date.now()
     readAt = nowMs
+    for (var e = 0; e < extras.length; e++) {
+      var extraId = extras[e]
+      if (!records.some(function(x) { return x && x.id === extraId }))
+        records.push({ id: extraId, name: extraId, ready: false, limits: [] })
+    }
     providers = Model.normalize(list, records, nowMs)
+    if (refreshedIds.length > 0 && !updating) {
+      var next = Object.assign({}, retries)
+      for (var r = 0; r < refreshedIds.length; r++) {
+        var id = refreshedIds[r]
+        var rec = records.filter(function(x) { return x && x.id === id })[0]
+        var h = Model.health(rec, rec ? rec.ready !== false : false)
+        var failures = next[id] ? next[id].failures + 1 : 1
+        var delay = Model.retryDelay(h, failures)
+        if (delay) next[id] = { failures: failures, at: nowMs + delay }
+        else delete next[id]
+      }
+      retries = next
+      refreshedIds = []
+    }
     if (cursor >= targets.length) cursor = targets.length - 1
     warn()
     applyOverlay()
@@ -231,11 +254,14 @@ Panel {
 
   // Omarchy's usage update also runs its own near-limit check, which notifies
   // or auto-switches for providers that have two or more accounts.
-  function refresh() {
+  function refresh(manual) {
     if (demo) { readState(); return }
     if (updateProc.running) return
+    var ids = recordIds.filter(function(id) { return manual === true || !retries[id] || retries[id].at <= Date.now() })
+    if (ids.length === 0) { readState(); return }
+    refreshedIds = ids
     updating = true
-    updateProc.command = ["omarchy-agent-usage-update", "--limits-only", "claude", "codex", "grok"].concat(extras)
+    updateProc.command = ["omarchy-agent-usage-update", "--limits-only"].concat(ids)
     updateProc.running = true
   }
 
@@ -430,6 +456,7 @@ Panel {
   function statusText() {
     if (demo) return strings.t("status.demo")
     if (updating) return strings.t("status.updating")
+    if (refreshError) return refreshError
     if (readAt <= 0) return ""
     var minutes = Math.floor((nowMs - readAt) / 60000)
     return minutes < 1 ? strings.t("status.justNow") : strings.t("status.updated").arg(countdownText(minutes * 60000))
@@ -516,7 +543,7 @@ Panel {
 
   Process {
     id: updateProc
-    onExited: { root.updating = false; root.readState() }
+    onExited: function(code) { root.refreshError = code === 0 ? "" : strings.t("health.collectorFailed"); root.updating = false; root.readState() }
   }
 
   // account-use refreshes the new account's limits in the background, so read once more shortly after.
@@ -687,7 +714,7 @@ Panel {
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(text) {
-        if (text === "r") root.refresh()
+        if (text === "r") root.refresh(true)
         else if (text === "s") root.toggleStyle()
         else if (text === "g") root.detailView = root.detailView === "settings" ? "limits" : "settings"
       }
@@ -729,7 +756,7 @@ Panel {
             tooltipText: strings.t("refresh")
             foreground: root.fg
             fontFamily: root.fontFamily
-            onClicked: root.refresh()
+            onClicked: root.refresh(true)
           }
           Button {
             iconText: "󰏘"
@@ -1028,6 +1055,17 @@ Panel {
         width: parent.width
         text: block.viewingOther ? strings.t("viewing.note").arg(block.viewed.label).arg(block.p.accounts.filter(function(a) { return a.active }).map(function(a) { return a.label })[0] || "") : ""
         color: root.redColor
+        font.pixelSize: root.fs(Style.font.bodySmall)
+        wrapMode: Text.Wrap
+        elide: Text.ElideNone
+      }
+
+      Label {
+        width: parent.width
+        visible: !block.viewingOther && block.p.health && block.p.health.state !== "ok"
+        text: visible ? strings.t(["health", block.p.health.state].join(".")) + (block.p.health.note ? "\n" + block.p.health.note : "")
+          + (block.p.details && block.p.details.fetchedAt > 0 ? "\n" + root.agoText(block.p.details.fetchedAt) : "") : ""
+        color: root.accent
         font.pixelSize: root.fs(Style.font.bodySmall)
         wrapMode: Text.Wrap
         elide: Text.ElideNone

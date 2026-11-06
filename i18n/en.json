@@ -1,7 +1,7 @@
 {
   "status.updating": "Updating…",
-  "status.justNow": "Updated just now",
-  "status.updated": "Updated %1 ago",
+  "status.justNow": "Checked just now",
+  "status.updated": "Checked %1 ago",
   "empty": "No agents signed in yet. Sign in to Claude Code or Codex, or list extra providers such as cursor,kimi,zai in the widget settings.",
   "noData": "no data yet",
   "reset.in": "resets in %1",
@@ -125,5 +125,11 @@
   "keys.settings": "settings",
   "keys.refresh": "refresh",
   "keys.style": "style",
-  "keys.close": "close"
+  "keys.close": "close",
+  "health.disconnected": "Not connected — sign in with the provider’s CLI (Add account for Claude, Codex or Grok).",
+  "health.expired": "Sign-in expired — open the agent and sign in again.",
+  "health.paused": "Limits paused — start the agent to renew its session.",
+  "health.rateLimited": "Usage requests rate limited — keeping the last known limits and retrying later.",
+  "health.unavailable": "Usage unavailable — cached limits may be out of date.",
+  "health.collectorFailed": "A usage collector failed"
 }

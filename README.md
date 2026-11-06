@@ -101,9 +101,21 @@ omarchy bar set io.github.basar-yilmaz.omaquota alertAt 85 --json
 | `showPercent` | `true` | Show the tightest limit next to the icon when no agent is in the bar |
 | `extraProviders` | empty | Extra Omarchy usage collectors, e.g. `cursor,kimi,zai` |
 | `alertAt` | `90` | Percent at which a warning is sent |
-| `refreshIntervalSec` | `900` | Background refresh interval; short intervals can hit provider rate limits |
+| `refreshIntervalSec` | `120` | Background refresh interval; short intervals can hit provider rate limits |
 | `accountSettings` | `{}` | Per-account Claude Code settings, set from the panel |
 | `demoFile` | empty | Show invented data instead of your own (see below) |
+
+Refresh defaults to two minutes (set `refreshIntervalSec` to `60` for one minute).
+Existing explicit interval settings are preserved. Failed providers back off
+independently for 5, 10, 20, then 30 minutes; numeric collector retry-after hints
+can extend that wait. Manual refresh retries immediately, while retaining
+Omarchy's collector caches. Cooldowns reset when the shell reloads.
+
+Signed-out providers remain visible for adding accounts. The Limits view shows
+expired sign-ins, paused sessions, rate limiting and stale data with the last
+successful fetch age. Start the agent for paused sessions; follow the collector's
+sign-in instructions for expired logins. No tokens are refreshed by OmaQuota.
+Health messages describe the active account, not other accounts being viewed.
 
 ## How it works
 

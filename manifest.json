@@ -29,7 +29,7 @@
       "style": "Cards",
       "extraProviders": "",
       "alertAt": 90,
-      "refreshIntervalSec": 900,
+      "refreshIntervalSec": 120,
       "showPercent": true,
       "barItems": "",
       "valueMode": "Left",
@@ -92,7 +92,7 @@
         "type": "boolean",
         "label": "Reset time in the bar",
         "defaultValue": false,
-        "description": "Adds a short countdown, such as 46% · 2d, next to each agent in the bar."
+        "description": "Adds a short countdown, such as 46% \u00b7 2d, next to each agent in the bar."
       },
       {
         "key": "barItems",
@@ -106,7 +106,7 @@
         "type": "string",
         "label": "Agents showing every account in the bar",
         "defaultValue": "",
-        "description": "Set from an agent's Settings tab (In the bar → Accounts). Comma-separated agent ids, for example claude. Those agents show each account's share of the chosen limit, tagged by its first letters."
+        "description": "Set from an agent's Settings tab (In the bar \u2192 Accounts). Comma-separated agent ids, for example claude. Those agents show each account's share of the chosen limit, tagged by its first letters."
       },
       {
         "key": "extraProviders",
@@ -132,8 +132,8 @@
         "min": 60,
         "max": 3600,
         "step": 60,
-        "defaultValue": 900,
-        "description": "How often limits are fetched in the background. Short intervals can hit Anthropic's rate limit."
+        "defaultValue": 120,
+        "description": "Background check interval. Failed providers back off for 5\u201330 minutes; collector caches remain in effect."
       },
       {
         "key": "showPercent",
