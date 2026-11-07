@@ -171,6 +171,9 @@ function normalize(accountList, records, now) {
     }
     if (!active) active = accounts[0]
     if (!active) continue
+    // Never set up (no login, collector not ready, e.g. no ~/.grok): hide. A lapsed login stays.
+    var rec0 = byId[p.provider]
+    if (!accounts.some(function(x) { return x.signedIn }) && rec0 && rec0.ready === false) continue
     out.push({
       id: p.provider,
       name: str(p.name, 40) || p.provider,

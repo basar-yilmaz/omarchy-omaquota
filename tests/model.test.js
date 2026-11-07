@@ -41,6 +41,10 @@ assert.strictEqual(claude.auto, true)
 assert.strictEqual(ps[3].switchable, false)
 assert.strictEqual(ps[3].plan, "Pro")
 
+// A provider nobody set up (signed out, collector not ready) is hidden.
+const unset = M.normalize(accountList, [{ id: "grok", ready: false }], now)
+assert.deepStrictEqual(unset.map(p => p.id), ["claude", "codex"])
+
 // Multi-account providers are Omarchy's to warn about; the rest are ours, once.
 const a1 = M.alerts(ps, 90, {})
 assert.deepStrictEqual(a1.map(a => a.provider), ["Cursor"])
