@@ -71,7 +71,7 @@ function count(value) {
   return isFinite(n) && n >= 0 ? Math.floor(n) : 0
 }
 
-// Banked resets: free "full reset" credits Codex hands out, each wiping the
+// Banked resets: free "full reset" credits Codex and Claude hand out, each wiping the
 // rate limits once on demand and lapsing after a month. null when none.
 function banked(credits) {
   if (!credits || typeof credits !== "object") return null
@@ -81,7 +81,7 @@ function banked(credits) {
   return { available: Math.min(available, 99), nextExpiresAt: isFinite(expires) ? expires : 0 }
 }
 
-// bin/codex-resets output -> the banked resets still available, soonest
+// bin/codex-resets and bin/claude-resets output -> the banked resets still available, soonest
 // deadline first: [{title, expiresAt, grantedAt}] (times in ms, 0 unknown).
 function resetRows(answer) {
   var out = []
@@ -91,7 +91,7 @@ function resetRows(answer) {
     if (!c || typeof c !== "object" || c.status !== "available") continue
     var expires = Date.parse(str(c.expiresAt, 64))
     var granted = Date.parse(str(c.grantedAt, 64))
-    out.push({ title: str(c.title, 60) || "Reset", expiresAt: isFinite(expires) ? expires : 0, grantedAt: isFinite(granted) ? granted : 0 })
+    out.push({ title: str(c.title, 100) || "Reset", expiresAt: isFinite(expires) ? expires : 0, grantedAt: isFinite(granted) ? granted : 0 })
   }
   out.sort(function(a, b) {
     if (!a.expiresAt !== !b.expiresAt) return a.expiresAt ? -1 : 1

@@ -25,8 +25,8 @@ the Omarchy bar. Requires Omarchy 4.5 or newer.
 - **Settings that follow the account** (Claude Code). Choose on/off keys of
   `settings.json`, such as *Remote control at startup*, per account; they are
   written when the account changes, wherever it is changed from.
-- **Banked resets** (Codex). See how many free full resets you have and list
-  each one with its deadline.
+- **Banked resets** (Claude Code and Codex). See how many free full resets
+  you have and list each one with its deadline.
 - **Other providers.** Any agent Omarchy has a usage collector for, such as
   Cursor, Kimi, z.ai, Copilot or OpenRouter, can be shown alongside.
 - **Near-limit warnings.** One notification per limit window at a threshold
@@ -45,7 +45,7 @@ the Omarchy bar. Requires Omarchy 4.5 or newer.
   candidate). Omarchy 4.0.x is not supported. Check with
   `omarchy agent account --help`.
 - `jq` and `notify-send` (shipped with Omarchy)
-- `python3` (shipped with Omarchy), used to list Codex banked resets
+- `python3` (shipped with Omarchy), used to list Claude and Codex banked resets
 - The agent CLIs you use, for example `claude`, `codex` or `grok`
 
 ## Install
@@ -129,6 +129,7 @@ writes a login.
 | Auto-switch for agents with several accounts | Omarchy's account check, run on each refresh |
 | Warnings for other agents | OmaQuota, through `notify-send` |
 | Per-account settings | `bin/apply-settings`, an atomic merge of on/off keys into `settings.json` |
+| Claude banked resets | `bin/claude-resets`, which asks the endpoint Claude Code's own limit screen reads, with the CLI's sign-in; at most every ten minutes |
 | Codex banked resets | `bin/codex-resets`, which asks the Codex CLI, only when the list is opened |
 
 Agent logos are read at runtime from Omarchy's agents plugin, so this

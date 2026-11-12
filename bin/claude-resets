@@ -1,0 +1,114 @@
+#!/usr/bin/python3 -I
+"""List Claude's banked resets (free full rate-limit resets) with their deadlines.
+
+usage: claude-resets [claude-home]
+
+Asks the endpoint Claude Code's own limit screen reads
+(/api/oauth/usage?cedar_ember=1), with the access token the CLI keeps in
+<claude-home>/.credentials.json (default ~/.claude). The token goes to
+api.anthropic.com only and is never printed. The server shows the grants only
+to a client that names itself as a recent Claude Code CLI, so the installed
+CLI's own version is sent. A lapsed token is not renewed here: only the CLI
+does that. Prints one JSON object in codex-resets' shape:
+{"credits": [{"title", "type", "status", "expiresAt", "grantedAt"}...],
+ "available": N, "nextExpiresAt": "..."} sorted by deadline, or {"error": "..."}.
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
+
+URL = "https://api.anthropic.com/api/oauth/usage?cedar_ember=1&skip_spend=1"
+MAX_CREDITS = 50
+
+
+def when(value):
+  if not isinstance(value, str):
+    return None
+  try:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
+  except ValueError:
+    return None
+
+
+def clean(block, now):
+  """The grants still holding a reset: one entry per reset left, soonest deadline first."""
+  grants = block.get("grants") if isinstance(block, dict) else None
+  out = []
+  for g in grants if isinstance(grants, list) else []:
+    if not isinstance(g, dict) or g.get("paused") is True:
+      continue
+    left = g.get("resets_left")
+    ends = when(g.get("ends_at"))
+    starts = when(g.get("starts_at"))
+    if not isinstance(left, int) or isinstance(left, bool) or left < 1 or (ends and ends <= now):
+      continue
+    entry = {
+      "title": str(g.get("label") or "")[:100],
+      "type": str(g.get("type") or "")[:24],
+      "status": "available",
+      "expiresAt": ends.isoformat() if ends else "",
+      "grantedAt": starts.isoformat() if starts else "",
+    }
+    out.extend([entry] * min(left, 10))
+  out.sort(key=lambda c: (c["expiresAt"] == "", c["expiresAt"]))
+  return out[:MAX_CREDITS]
+
+
+def cli_version():
+  claude = shutil.which("claude")
+  if not claude:
+    raise RuntimeError("claude not found in PATH")
+  text = subprocess.run([claude, "--version"], capture_output=True, text=True, timeout=10).stdout
+  found = re.match(r"\d+\.\d+\.\d+", text.strip())
+  if not found:
+    raise RuntimeError("couldn't read the Claude Code version")
+  return found.group(0)
+
+
+def token(home):
+  try:
+    with open(os.path.join(home, ".credentials.json")) as f:
+      oauth = json.load(f).get("claudeAiOauth") or {}
+  except (OSError, ValueError, AttributeError):
+    raise RuntimeError("no Claude sign-in found")
+  access = oauth.get("accessToken")
+  if not isinstance(access, str) or not access:
+    raise RuntimeError("no Claude sign-in found")
+  expires = oauth.get("expiresAt")
+  if isinstance(expires, (int, float)) and expires <= time.time() * 1000:
+    raise RuntimeError("Limits paused — start Claude Code to renew its session.")
+  return access
+
+
+def main():
+  home = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else "~/.claude")
+  try:
+    request = urllib.request.Request(URL, headers={
+      "Authorization": "Bearer " + token(home),
+      "anthropic-beta": "oauth-2025-04-20",
+      "User-Agent": f"claude-cli/{cli_version()} (external, cli)",
+      "Accept": "application/json",
+    })
+    with urllib.request.urlopen(request, timeout=10) as response:
+      body = json.loads(response.read(2000000))
+    credits = clean(body.get("cedar_ember"), datetime.now(timezone.utc))
+    return {"credits": credits, "available": len(credits), "nextExpiresAt": credits[0]["expiresAt"] if credits else ""}
+  except urllib.error.HTTPError as exc:
+    if exc.code == 401:
+      return {"error": "Sign-in expired — run `claude auth login`."}
+    if exc.code == 429:
+      return {"error": "Anthropic is rate-limiting this. Try again in a moment."}
+    return {"error": f"Anthropic answered HTTP {exc.code}."}
+  except Exception as exc:
+    return {"error": str(exc)[:200] or "Anthropic didn't answer."}
+
+
+if __name__ == "__main__":
+  print(json.dumps(main()))
