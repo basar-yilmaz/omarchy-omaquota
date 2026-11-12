@@ -88,8 +88,8 @@
     "other": "%1 banked resets"
   },
   "banked.expires": "next expires in %1",
-  "banked.loading": "Asking Codex…",
-  "banked.failed": "Codex didn't answer. Try again in a moment.",
+  "banked.loading": "Asking…",
+  "banked.failed": "No answer. Try again in a moment.",
   "banked.none": "No banked resets left.",
   "banked.deadline": "%1 · in %2",
   "banked.expired": "expired %1",

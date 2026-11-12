@@ -23,6 +23,7 @@ Panel {
   readonly property string usageDir: stateHome + "/omarchy/agents/usage"
   readonly property string accountsDir: stateHome + "/omarchy/agents/accounts"
   readonly property string resetsScript: String(Qt.resolvedUrl("bin/codex-resets")).replace(/^file:\/\//, "")
+  readonly property string claudeResetsScript: String(Qt.resolvedUrl("bin/claude-resets")).replace(/^file:\/\//, "")
   readonly property string applyScript: String(Qt.resolvedUrl("bin/apply-settings")).replace(/^file:\/\//, "")
 
   // ---------- Settings (shell.json inline entry) ----------
@@ -76,11 +77,18 @@ Panel {
     viewing = next
     detailView = "limits"
   }
-  // Codex's banked resets, listed on demand: asking starts a Codex app-server.
-  property var resetList: []
-  property double resetListAt: 0
-  property bool resetLoading: false
-  property string resetError: ""
+  // Banked resets by provider id: {list, banked, at, tried, home, loading, error}.
+  // Claude's are fetched with every state read (kept ten minutes, two after a
+  // failure); Codex's only when its list is opened: asking starts an app-server.
+  property var resetState: ({})
+  function resetsOf(id) {
+    return resetState[id] || { list: [], banked: null, at: 0, tried: 0, home: "", loading: false, error: "" }
+  }
+  function setResets(id, patch) {
+    var all = Object.assign({}, resetState)
+    all[id] = Object.assign({}, resetsOf(id), patch)
+    resetState = all
+  }
   // Folded/unfolded state shared by every agent: the banked list and the
   // Settings tab's sections stay as you left them when you switch agents.
   property bool bankedOpen: false
@@ -250,6 +258,8 @@ Panel {
     if (cursor >= targets.length) cursor = targets.length - 1
     warn()
     applyOverlay()
+    var claudeAccount = activeAccount("claude")
+    if (claudeAccount && claudeAccount.signedIn) loadResets("claude", false)
   }
 
   // Omarchy's usage update also runs its own near-limit check, which notifies
@@ -409,25 +419,30 @@ Panel {
     return Commons.I18n.formatNumber(n)
   }
 
-  function loadResets(force) {
-    if (resetsProc.running) return
-    if (!force && resetListAt > Date.now() - 600000) return
-    var active = activeAccount("codex")
-    resetLoading = true
-    resetError = ""
-    resetsProc.command = demo ? ["bash", demoScript, "--resets", demoFile]
-      : ["python3", "-I", resetsScript, active && active.home ? active.home : ""]
-    resetsProc.running = true
+  function loadResets(id, force) {
+    var proc = id === "claude" ? claudeResetsProc : resetsProc
+    if (proc.running || (demo && id === "claude")) return
+    var s = resetsOf(id)
+    var active = activeAccount(id)
+    var home = active && active.home ? active.home : ""
+    if (!force && s.home === home && s.tried > Date.now() - (s.error !== "" ? 120000 : 600000)) return
+    var same = s.home === home
+    setResets(id, { loading: true, error: "", home: home, tried: Date.now(), list: same ? s.list : [], banked: same ? s.banked : null })
+    proc.command = demo ? ["bash", demoScript, "--resets", demoFile]
+      : ["python3", "-I", id === "claude" ? claudeResetsScript : resetsScript, home]
+    proc.running = true
   }
 
-  function parseResets(text) {
-    resetLoading = false
+  function parseResets(id, text) {
     var answer = null
     try { answer = JSON.parse(String(text || "").slice(0, 200000)) } catch (e) { answer = null }
-    if (!answer || typeof answer !== "object") { resetError = strings.t("banked.failed"); return }
-    if (typeof answer.error === "string") { resetError = answer.error.slice(0, 200); return }
-    resetList = Model.resetRows(answer)
-    resetListAt = Date.now()
+    if (!answer || typeof answer !== "object") { setResets(id, { loading: false, error: strings.t("banked.failed") }); return }
+    if (typeof answer.error === "string") { setResets(id, { loading: false, error: answer.error.slice(0, 200) }); return }
+    setResets(id, { loading: false, list: Model.resetRows(answer), banked: Model.banked(answer), at: Date.now() })
+  }
+
+  function resetsExited(id, code) {
+    if (code !== 0 && resetsOf(id).loading) setResets(id, { loading: false, error: strings.t("banked.failed") })
   }
 
   function deadlineText(ms) {
@@ -436,7 +451,11 @@ Panel {
     return ms > nowMs ? strings.t("banked.deadline").arg(when).arg(countdownText(ms - nowMs)) : strings.t("banked.expired").arg(when)
   }
 
-  function bankedOf(p) { return p && p.details ? p.details.banked : null }
+  // Omarchy's collector carries Codex's count; Claude's we ask for ourselves.
+  function bankedOf(p) {
+    var own = p && p.id === "claude" && !demo ? resetsOf("claude").banked : null
+    return own || (p && p.details ? p.details.banked : null)
+  }
 
   // "3 banked resets · next expires in 3d 4h"
   function bankedText(b) {
@@ -554,8 +573,14 @@ Panel {
 
   Process {
     id: resetsProc
-    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.parseResets(text) }
-    onExited: function(code) { if (code !== 0 && root.resetLoading) { root.resetLoading = false; root.resetError = strings.t("banked.failed") } }
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.parseResets("codex", text) }
+    onExited: function(code) { root.resetsExited("codex", code) }
+  }
+
+  Process {
+    id: claudeResetsProc
+    stdout: StdioCollector { waitForEnd: true; onStreamFinished: root.parseResets("claude", text) }
+    onExited: function(code) { root.resetsExited("claude", code) }
   }
 
   Process {
@@ -1161,10 +1186,11 @@ Panel {
         }
       }
 
-      // Banked resets (Codex): free full resets waiting to be used. Folded
-      // to a count; opening it lists each one with its deadline.
+      // Banked resets (Claude, Codex): free full resets waiting to be used.
+      // Folded to a count; opening it lists each one with its deadline.
       Column {
         id: bankedBox
+        readonly property var rs: root.resetsOf(block.p ? block.p.id : "")
         // Banked resets belong to the active account.
         visible: root.bankedOf(block.p) !== null && !block.viewingOther
         width: parent.width
@@ -1176,12 +1202,12 @@ Panel {
           expanded: root.bankedOpen
           onToggle: {
             root.bankedOpen = !root.bankedOpen
-            if (root.bankedOpen) root.loadResets(false)
+            if (root.bankedOpen) root.loadResets(block.p.id, false)
           }
         }
         Label {
-          visible: root.bankedOpen && (root.resetLoading || root.resetError !== "")
-          text: (root.resetLoading ? strings.t("banked.loading") : root.resetError) || ""
+          visible: root.bankedOpen && (bankedBox.rs.loading || bankedBox.rs.error !== "")
+          text: (bankedBox.rs.loading ? strings.t("banked.loading") : bankedBox.rs.error) || ""
           color: root.dim
           font.pixelSize: root.fs(Style.font.bodySmall)
           wrapMode: Text.Wrap
@@ -1189,7 +1215,7 @@ Panel {
           width: parent.width
         }
         Repeater {
-          model: root.bankedOpen && !root.resetLoading ? root.resetList : []
+          model: root.bankedOpen && !bankedBox.rs.loading ? bankedBox.rs.list : []
           delegate: Item {
             required property var modelData
             required property int index
@@ -1203,6 +1229,7 @@ Panel {
               anchors.rightMargin: root.sp(10)
               anchors.verticalCenter: parent.verticalCenter
               text: (index + 1) + ".  " + modelData.title
+              wrapMode: Text.Wrap
               font.pixelSize: root.fs(Style.font.bodySmall)
             }
             Label {
@@ -1217,7 +1244,7 @@ Panel {
           }
         }
         Label {
-          visible: root.bankedOpen && !root.resetLoading && root.resetError === "" && root.resetListAt > 0 && root.resetList.length === 0
+          visible: root.bankedOpen && !bankedBox.rs.loading && bankedBox.rs.error === "" && bankedBox.rs.at > 0 && bankedBox.rs.list.length === 0
           text: strings.t("banked.none")
           color: root.dim
           font.pixelSize: root.fs(Style.font.bodySmall)
